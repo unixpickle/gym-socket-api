@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"net"
+	"sync"
 
 	"github.com/unixpickle/essentials"
 )
@@ -11,6 +12,8 @@ import (
 var byteOrder = binary.LittleEndian
 
 // Env is a handle on a Gym environment.
+//
+// The methods on an Env are thread-safe.
 type Env interface {
 	// Reset resets the environment.
 	Reset() (observation interface{}, err error)
@@ -39,6 +42,8 @@ type Env interface {
 type connEnv struct {
 	Buf  *bufio.ReadWriter
 	Conn net.Conn
+
+	CmdLock sync.Mutex
 }
 
 // Make creates an Env by connecting to an API server and
