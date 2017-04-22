@@ -5,6 +5,7 @@ Listen for client connections and dispatch handlers.
 import os
 import sys
 import subprocess
+import socket
 
 if sys.version_info >= (3, 0):
     import socketserver
@@ -42,6 +43,10 @@ class Handler(socketserver.BaseRequestHandler):
             sock = self.request.makefile('rwb', buffering=0)
         else:
             sock = self.request.makefile('rwb', 0)
+
+        # Greatly reduces latency on Linux.
+        if sys.platform in ['linux', 'linux2', 'darwin']:
+            self.request.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
         try:
             print('Connection from ' + str(self.client_address))
