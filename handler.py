@@ -130,7 +130,15 @@ def handle_monitor(sock, env):
     resume = proto.read_bool(sock)
     force = proto.read_bool(sock)
     dir_path = proto.read_field_str(sock)
-    return wrappers.Monitor(env, dir_path, resume=resume, force=force)
+    try:
+        res = wrappers.Monitor(env, dir_path, resume=resume, force=force)
+        proto.write_field_str(sock, '')
+        sock.flush()
+        return res
+    except gym.error.Error as exc:
+        proto.write_field_str(sock, str(exc))
+        sock.flush()
+        return env
 
 def handle_render(env):
     """

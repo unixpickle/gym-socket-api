@@ -94,6 +94,8 @@ This packet tells the server to wrap the current environment in a monitor. It ca
 |Client   |bool                  | Force                 |
 |Client   |uint32                | Dir path length       |
 |Client   |string                | Dir path              |
+|Server   |uint32                | Error length          |
+|Server   |string                | Error message         |
 
 ### Packet: Render
 

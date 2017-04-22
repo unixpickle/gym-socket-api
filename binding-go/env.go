@@ -3,6 +3,7 @@ package gym
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"net"
 	"path/filepath"
 	"sync"
@@ -160,6 +161,11 @@ func (c *connEnv) Monitor(dir string, force, resume bool) (err error) {
 	}
 	if err := c.Buf.Flush(); err != nil {
 		return err
+	}
+	if errData, err := readByteField(c.Buf); err != nil {
+		return err
+	} else if len(errData) > 0 {
+		return errors.New(string(errData))
 	}
 	return nil
 }
