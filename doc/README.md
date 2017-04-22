@@ -36,7 +36,7 @@ This packet resets the environment and gets the initial observation. It can be u
 |Source   |Type                         | Description           |
 |---------|-----------------------------|-----------------------|
 |Client   |uint8                        | Packet type (0)       |
-|Server   |[observation](#Observations) | Initial observation   |
+|Server   |[observation](#observations) | Initial observation   |
 
 ### Packet: Step
 
@@ -47,8 +47,8 @@ This packet takes a step in the environment and gets a lot of information back. 
 |Source   |Type                         | Description           |
 |---------|-----------------------------|-----------------------|
 |Client   |uint8                        | Packet type (1)       |
-|Client   |[action](#Actions)           | Action to take        |
-|Server   |[observation](#Observations) | Next observation      |
+|Client   |[action](#actions)           | Action to take        |
+|Server   |[observation](#observations) | Next observation      |
 |Server   |float64                      | Reward                |
 |Server   |bool                         | Done                  |
 |Server   |uint32                       | Info length           |
@@ -70,7 +70,7 @@ The available action types are listed below.
 
 This is action type 0.
 
-The data inside the action is a JSON string.
+The data inside the action is a JSON string for the space's `from_jsonable` method.
 
 ## Observations
 
@@ -88,12 +88,18 @@ The available observation types are listed below.
 
 This is observation type 0.
 
-The data in the packet is a JSON string.
+The data in the packet is a JSON string from the space's `to_jsonable` method.
 
 ### Observation: Byte List
 
 This is observation type 1.
 
-The data in the packet is a flattened array of bytes.
+The data in the packet is a flattened array of bytes. This observation has the following format:
+
+|Type     | Description           |
+|---------|-----------------------|
+|uint32   | Num dimensions        |
+|uint32[] | Dimensions            |
+|uint8[]  | Data                  |
 
 This is for observations in things like Atari environments where the observation is a raw 3D array of bytes. The array of bytes is flattened (in C order) into a 1D list of bytes.

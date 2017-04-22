@@ -2,6 +2,8 @@
 
 This will be a fast and stable API for accessing [OpenAI Gym](https://gym.openai.com) from other programming languages. My main goal is to create bindings that can scale up to difficult, high-dimensional environments without being slow.
 
+**Disclaimer:** I don't know Python.
+
 # Why not use the official bindings?
 
 There are already official language bindings for OpenAI Gym in [openai/gym-http-api](https://github.com/openai/gym-http-api). Here are some reasons why gym-socket-api is still necessary:

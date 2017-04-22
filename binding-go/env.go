@@ -2,24 +2,22 @@ package gym
 
 import (
 	"bufio"
-	"encoding/binary"
+	"encoding/json"
 	"net"
 	"sync"
 
 	"github.com/unixpickle/essentials"
 )
 
-var byteOrder = binary.LittleEndian
-
 // Env is a handle on a Gym environment.
 //
 // The methods on an Env are thread-safe.
 type Env interface {
 	// Reset resets the environment.
-	Reset() (observation interface{}, err error)
+	Reset() (obs Obs, err error)
 
 	// Step takes an action.
-	Step(action interface{}) (obs interface{}, reward float64,
+	Step(action interface{}) (obs Obs, reward float64,
 		done bool, info interface{}, err error)
 
 	// ActionSpace gets the action space.
@@ -64,13 +62,54 @@ func Make(host, envName string) (env Env, err error) {
 	return &connEnv{Buf: rw, Conn: conn}, nil
 }
 
-func (c *connEnv) Reset() (observation interface{}, err error) {
-	panic("nyi")
+func (c *connEnv) Reset() (obs Obs, err error) {
+	defer essentials.AddCtxTo("reset environment", &err)
+	c.CmdLock.Lock()
+	defer c.CmdLock.Unlock()
+	if err := writePacketType(c.Buf, packetReset); err != nil {
+		return nil, err
+	}
+	if err := c.Buf.Flush(); err != nil {
+		return nil, err
+	}
+	return readObservation(c.Buf)
 }
 
-func (c *connEnv) Step(action interface{}) (obs interface{}, reward float64,
+func (c *connEnv) Step(action interface{}) (obs Obs, reward float64,
 	done bool, info interface{}, err error) {
-	panic("nyi")
+	defer essentials.AddCtxTo("step environment", &err)
+	c.CmdLock.Lock()
+	defer c.CmdLock.Unlock()
+	err = writePacketType(c.Buf, packetStep)
+	if err != nil {
+		return
+	}
+	err = writeAction(c.Buf, action)
+	if err != nil {
+		return
+	}
+	err = c.Buf.Flush()
+	if err != nil {
+		return
+	}
+	obs, err = readObservation(c.Buf)
+	if err != nil {
+		return
+	}
+	reward, err = readReward(c.Buf)
+	if err != nil {
+		return
+	}
+	done, err = readBool(c.Buf)
+	if err != nil {
+		return
+	}
+	infoData, err := readByteField(c.Buf)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(infoData, &info)
+	return
 }
 
 func (c *connEnv) ActionSpace() (*Space, error) {

@@ -1,9 +1,10 @@
 import os
 import socket
 import traceback
-import struct
 import proto
 import gym
+import numpy as np
+import json
 
 def serve(port):
     # TODO: use socketserver module.
@@ -51,6 +52,31 @@ def handshake(sock):
 
 def loop(sock, env):
     while True:
-        packType = proto.read_packet_type(sock)
-        # TODO: use packType here.
-        print('Packet of type ' + packType)
+        pack_type = proto.read_packet_type(sock)
+        if pack_type == 'reset':
+            handle_reset(sock, env)
+        elif pack_type == 'step':
+            handle_step(sock, env)
+
+def handle_reset(sock, env):
+    send_obs(sock, env, env.reset())
+    sock.flush()
+
+def handle_step(sock, env):
+    action = proto.read_action(sock)
+    if isinstance(action, list):
+        action = np.array(action)
+    obs, rew, done, info = env.step(action)
+    send_obs(sock, env, obs)
+    proto.write_reward(sock, rew)
+    proto.write_bool(sock, done)
+    proto.write_field_str(sock, json.dumps(info))
+    sock.flush()
+
+def send_obs(sock, env, obs):
+    if isinstance(obs, np.ndarray):
+        if obs.dtype == 'uint8':
+            proto.write_obs_byte_list(sock, obs)
+            return
+    jsonable = env.observation_space.to_jsonable(obs)
+    proto.write_obs_json(sock, jsonable)

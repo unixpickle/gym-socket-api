@@ -1,4 +1,5 @@
 import struct
+import json
 
 class ProtoException(Exception):
     pass
@@ -14,6 +15,10 @@ def read_flags(sock):
 
 def read_packet_type(sock):
     typeVal = read_byte(sock)
+    if typeVal == 0:
+        return 'reset'
+    elif typeVal == 1:
+        return 'step'
     raise ProtoException('unknown packet type: ' + str(typeVal))
 
 def read_field(sock):
@@ -30,9 +35,38 @@ def read_field_str(sock):
     return read_field(sock).decode('utf-8')
 
 def write_field(sock, field):
-    lenField = struct.pack('<I', len(field))
-    sock.write(lenField)
+    sock.write(struct.pack('<I', len(field)))
     sock.write(field)
 
 def write_field_str(sock, field):
     write_field(sock, field.encode('utf-8'))
+
+def write_obs_json(sock, jsonable):
+    sock.write(struct.pack('<B', 0))
+    write_field_str(sock, json.dumps(jsonable, separators=(',', ':')))
+
+def write_obs_byte_list(sock, arr):
+    sock.write(struct.pack('<B', 1))
+    dims = list(arr.shape)
+    header = struct.pack('<I', len(dims))
+    for d in dims:
+        header += struct.pack('<I', d)
+    payload = arr.tobytes()
+    sock.write(struct.pack('<I', len(header)+len(payload)))
+    sock.write(header)
+    sock.write(payload)
+
+def write_reward(sock, rew):
+    sock.write(struct.pack('<d', rew))
+
+def write_bool(sock, b):
+    n = 0
+    if b:
+        n =1
+    sock.write(struct.pack('<B', n))
+
+def read_action(sock):
+    type_id = read_byte(sock)
+    if type_id == 0:
+        return json.loads(read_field_str(sock))
+    raise ProtoException('unknown action type: ' + str(type_id))
