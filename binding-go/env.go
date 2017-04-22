@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"net"
+	"path/filepath"
 	"sync"
 
 	"github.com/unixpickle/essentials"
@@ -34,7 +35,13 @@ type Env interface {
 
 	// Monitor sets the environment up to save results
 	// to the given directory.
+	//
+	// If the directory is a relative path, it should be
+	// relative to the current working directory.
 	Monitor(dir string, force, resume bool) error
+
+	// Render graphically renders the environment.
+	Render() error
 
 	// Close stops and cleans up the environment.
 	Close() error
@@ -134,7 +141,32 @@ func (c *connEnv) SampleAction(dst interface{}) error {
 }
 
 func (c *connEnv) Monitor(dir string, force, resume bool) error {
-	panic("nyi")
+	if err := writePacketType(c.Buf, packetMonitor); err != nil {
+		return err
+	}
+	for _, b := range []bool{resume, force} {
+		if err := writeBool(c.Buf, b); err != nil {
+			return err
+		}
+	}
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return err
+	}
+	if err := writeByteField(c.Buf, []byte(absDir)); err != nil {
+		return err
+	}
+	if err := c.Buf.Flush(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *connEnv) Render() error {
+	if err := writePacketType(c.Buf, packetRender); err != nil {
+		return err
+	}
+	return c.Buf.Flush()
 }
 
 func (c *connEnv) Close() error {

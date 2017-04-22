@@ -82,6 +82,10 @@ def loop(sock, env):
             handle_get_space(sock, env)
         elif pack_type == 'sample_action':
             handle_sample_action(sock, env)
+        elif pack_type == 'monitor':
+            env = handle_monitor(sock, env)
+        elif pack_type == 'render':
+            handle_render(sock, env)
 
 def handle_reset(sock, env):
     """
@@ -122,3 +126,18 @@ def handle_sample_action(sock, env):
     action = env.action_space.sample()
     proto.write_action(sock, env, action)
     sock.flush()
+
+def handle_monitor(sock, env):
+    """
+    Start a monitor and return the new environment.
+    """
+    resume = proto.read_bool(sock)
+    force = proto.read_bool(sock)
+    dir_path = proto.read_field_str(sock)
+    return gym.wrappers.Monitor(env, dir_path, resume=resume, force=force)
+
+def handle_render(env):
+    """
+    Render the environment.
+    """
+    env.render()

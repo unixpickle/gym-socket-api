@@ -42,6 +42,10 @@ def read_packet_type(sock):
         return 'get_space'
     elif type_id == 3:
         return 'sample_action'
+    elif type_id == 4:
+        return 'monitor'
+    elif type_id == 5:
+        return 'render'
     raise ProtoException('unknown packet type: ' + str(type_id))
 
 def read_field(sock):
@@ -113,6 +117,17 @@ def write_reward(sock, rew):
     Write a reward value.
     """
     sock.write(struct.pack('<d', rew))
+
+def read_bool(sock):
+    """
+    Read a boolean.
+    """
+    flag = read_byte(sock)
+    if flag == 0:
+        return False
+    elif flag == 1:
+        return True
+    raise ProtoException('invalid boolean: ' + str(flag))
 
 def write_bool(sock, flag):
     """

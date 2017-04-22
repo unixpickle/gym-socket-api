@@ -79,6 +79,30 @@ This packet samples an action from the action space. It can be used as follows:
 |Client   |uint8                 | Packet type (3)       |
 |Server   |[action](#Actions)    | Action data           |
 
+### Packet: Monitor
+
+This is packet type 4.
+
+This packet tells the server to wrap the current environment in a monitor. It can be used as follows:
+
+|Source   |Type                  | Description           |
+|---------|----------------------|-----------------------|
+|Client   |uint8                 | Packet type (4)       |
+|Client   |bool                  | Resume                |
+|Client   |bool                  | Force                 |
+|Client   |uint32                | Dir path length       |
+|Client   |string                | Dir path              |
+
+### Packet: Render
+
+This is packet type 5.
+
+This packet tells the server to render the current environment.
+
+|Source   |Type                  | Description           |
+|---------|----------------------|-----------------------|
+|Client   |uint8                 | Packet type (5)       |
+
 ## Actions
 
 Actions are encoded in a type-specific manner. They are of the form:

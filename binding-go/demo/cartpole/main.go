@@ -14,6 +14,8 @@ func main() {
 
 	defer conn.Close()
 
+	must(conn.Monitor("gym-monitor", true, false))
+
 	actionSpace, err := conn.ActionSpace()
 	must(err)
 	fmt.Printf("Action space: %#v\n", actionSpace)
@@ -26,10 +28,13 @@ func main() {
 	must(err)
 	fmt.Println("Initial obs:", obs)
 
+	must(conn.Render())
+
 	for {
 		var action int
 		must(conn.SampleAction(&action))
 		obs, rew, done, _, err := conn.Step(action)
+		must(conn.Render())
 		must(err)
 		fmt.Printf("Step: rew=%f obs=%v\n", rew, obs)
 		if done {

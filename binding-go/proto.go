@@ -17,6 +17,8 @@ const (
 	packetStep         = 1
 	packetGetSpace     = 2
 	packetSampleAction = 3
+	packetMonitor      = 4
+	packetRender       = 5
 )
 
 const (
@@ -176,4 +178,14 @@ func readBool(r io.Reader) (bool, error) {
 		return false, fmt.Errorf("invalid bool: %d", b)
 	}
 	return b != 0, nil
+}
+
+func writeBool(w io.Writer, b bool) error {
+	var err error
+	if b {
+		_, err = w.Write([]byte{1})
+	} else {
+		_, err = w.Write([]byte{0})
+	}
+	return err
 }
