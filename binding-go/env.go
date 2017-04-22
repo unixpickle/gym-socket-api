@@ -113,11 +113,11 @@ func (c *connEnv) Step(action interface{}) (obs Obs, reward float64,
 }
 
 func (c *connEnv) ActionSpace() (*Space, error) {
-	panic("nyi")
+	return c.getSpace(actionSpace)
 }
 
 func (c *connEnv) ObservationSpace() (*Space, error) {
-	panic("nyi")
+	return c.getSpace(observationSpace)
 }
 
 func (c *connEnv) SampleAction() (interface{}, error) {
@@ -130,4 +130,25 @@ func (c *connEnv) Monitor(dir string, force, resume bool) error {
 
 func (c *connEnv) Close() error {
 	return c.Conn.Close()
+}
+
+func (c *connEnv) getSpace(spaceID int) (*Space, error) {
+	if err := writePacketType(c.Buf, packetGetSpace); err != nil {
+		return nil, err
+	}
+	if err := writeSpaceType(c.Buf, spaceID); err != nil {
+		return nil, err
+	}
+	if err := c.Buf.Flush(); err != nil {
+		return nil, err
+	}
+	data, err := readByteField(c.Buf)
+	if err != nil {
+		return nil, err
+	}
+	var s *Space
+	if err := json.Unmarshal(data, &s); err != nil {
+		return nil, err
+	}
+	return s, nil
 }

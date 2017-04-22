@@ -54,6 +54,20 @@ This packet takes a step in the environment and gets a lot of information back. 
 |Server   |uint32                       | Info length           |
 |Server   |string                       | Info JSON             |
 
+### Packet: Get Space
+
+This is packet type 2.
+
+This packet gets information about the observation or action space. It can be used as follows:
+
+|Source   |Type                         | Description           |
+|---------|----------------------|-----------------------|
+|Client   |uint8                 | Packet type (2)       |
+|Client   |uint8                 | Which space?          |
+|Server   |[space](#spaces)      | Space data            |
+
+The "Which space?" field is 0 for the action space or 1 for the observation space.
+
 ## Actions
 
 Actions are encoded in a type-specific manner. They are of the form:
@@ -103,3 +117,68 @@ The data in the packet is a flattened array of bytes. This observation has the f
 |uint8[]  | Data                  |
 
 This is for observations in things like Atari environments where the observation is a raw 3D array of bytes. The array of bytes is flattened (in C order) into a 1D list of bytes.
+
+## Spaces
+
+Spaces are encoded using JSON:
+
+|Type    | Description      |
+|--------|------------------|
+|uint32  | Length of data   |
+|string  | JSON Data        |
+
+The following examples demonstrate how each space type should be encoded.
+
+Box spaces:
+
+```json
+{
+  "type": "Box",
+  "shape": [2, 3],
+  "low": [-1, -1, -1, -1, -1, -1],
+  "high": [1, 1, 1, 1, 1, 1]
+}
+```
+
+Discrete spaces:
+
+```json
+{
+  "type": "Discrete",
+  "n": 5,
+}
+```
+
+MultiBinary spaces:
+
+```json
+{
+  "type": "MultiBinary",
+  "n": 5,
+}
+```
+
+MultiDiscrete spaces:
+
+```json
+{
+  "type": "MultiDiscrete",
+  "low": [0, 0, 0],
+  "high": [4, 1, 1],
+}
+```
+
+Tuple spaces:
+
+```json
+{
+  "type": "Tuple",
+  "subspaces": [
+    {
+      "type": "Discrete",
+      "n": 5,
+    },
+    ...
+  ],
+}
+```

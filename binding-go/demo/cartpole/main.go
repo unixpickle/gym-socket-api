@@ -15,6 +15,14 @@ func main() {
 
 	defer conn.Close()
 
+	actionSpace, err := conn.ActionSpace()
+	must(err)
+	fmt.Printf("Action space: %#v\n", actionSpace)
+
+	obsSpace, err := conn.ObservationSpace()
+	must(err)
+	fmt.Printf("Observation space: %#v\n", obsSpace)
+
 	obs, err := conn.Reset()
 	must(err)
 	fmt.Println("Initial obs:", obs)

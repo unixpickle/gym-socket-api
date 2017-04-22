@@ -13,8 +13,9 @@ import (
 var byteOrder = binary.LittleEndian
 
 const (
-	packetReset = 0
-	packetStep  = 1
+	packetReset    = 0
+	packetStep     = 1
+	packetGetSpace = 2
 )
 
 const (
@@ -24,6 +25,11 @@ const (
 
 const (
 	actionJSON = 0
+)
+
+const (
+	actionSpace      = 0
+	observationSpace = 1
 )
 
 func handshake(rw *bufio.ReadWriter, envName string) error {
@@ -73,6 +79,10 @@ func readByteField(r io.Reader) ([]byte, error) {
 func writePacketType(w io.Writer, typeID int) error {
 	_, err := w.Write([]byte{byte(typeID)})
 	return err
+}
+
+func writeSpaceType(w io.Writer, typeID int) error {
+	return writePacketType(w, typeID)
 }
 
 func readObservation(r io.Reader) (Obs, error) {

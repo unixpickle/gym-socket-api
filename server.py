@@ -16,13 +16,13 @@ def serve(port):
     Run a server on the given port.
     """
     # TODO: use socketserver module.
-    s = socket.socket()
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind(('127.0.0.1', port))
+    sock = socket.socket()
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.bind(('127.0.0.1', port))
     print('Listening on port %d...' % port)
-    s.listen(10)
+    sock.listen(10)
     while True:
-        conn, addr = s.accept()
+        conn, addr = sock.accept()
         pid = os.fork()
         if pid == 0:
             handle(conn, addr)
@@ -42,6 +42,8 @@ def handle(conn, addr):
             loop(sock_file, env)
         finally:
             env.close()
+    except proto.ProtoException as exc:
+        print('%s gave error %s' % (str(addr), str(exc)))
     finally:
         print('Disconnect from %s' % str(addr))
         sock_file.close()
@@ -76,12 +78,14 @@ def loop(sock, env):
             handle_reset(sock, env)
         elif pack_type == 'step':
             handle_step(sock, env)
+        elif pack_type == 'get_space':
+            handle_get_space(sock, env)
 
 def handle_reset(sock, env):
     """
     Reset the environment and send the result.
     """
-    send_obs(sock, env, env.reset())
+    proto.write_obs(sock, env, env.reset())
     sock.flush()
 
 def handle_step(sock, env):
@@ -92,19 +96,19 @@ def handle_step(sock, env):
     if isinstance(action, list):
         action = np.array(action)
     obs, rew, done, info = env.step(action)
-    send_obs(sock, env, obs)
+    proto.write_obs(sock, env, obs)
     proto.write_reward(sock, rew)
     proto.write_bool(sock, done)
     proto.write_field_str(sock, json.dumps(info))
     sock.flush()
 
-def send_obs(sock, env, obs):
+def handle_get_space(sock, env):
     """
-    Encode and send an observation.
+    Get information about the action or observation space.
     """
-    if isinstance(obs, np.ndarray):
-        if obs.dtype == 'uint8':
-            proto.write_obs_byte_list(sock, obs)
-            return
-    jsonable = env.observation_space.to_jsonable(obs)
-    proto.write_obs_json(sock, jsonable)
+    space_id = proto.read_space_id(sock)
+    if space_id == 'action':
+        proto.write_space(sock, env.action_space)
+    elif space_id == 'observation':
+        proto.write_space(sock, env.observation_space)
+    sock.flush()

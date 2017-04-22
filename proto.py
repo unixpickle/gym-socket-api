@@ -4,6 +4,8 @@ Low-level API for protocol-specific encoding/decoding.
 
 import struct
 import json
+from gym import spaces
+import numpy as np
 
 class ProtoException(Exception):
     """
@@ -36,6 +38,8 @@ def read_packet_type(sock):
         return 'reset'
     elif type_id == 1:
         return 'step'
+    elif type_id == 2:
+        return 'get_space'
     raise ProtoException('unknown packet type: ' + str(type_id))
 
 def read_field(sock):
@@ -69,6 +73,17 @@ def write_field_str(sock, field):
     Write a variable length string field.
     """
     write_field(sock, field.encode('utf-8'))
+
+def write_obs(sock, env, obs):
+    """
+    Encode and send an observation.
+    """
+    if isinstance(obs, np.ndarray):
+        if obs.dtype == 'uint8':
+            write_obs_byte_list(sock, obs)
+            return
+    jsonable = env.observation_space.to_jsonable(obs)
+    write_obs_json(sock, jsonable)
 
 def write_obs_json(sock, jsonable):
     """
@@ -114,3 +129,57 @@ def read_action(sock):
     if type_id == 0:
         return json.loads(read_field_str(sock))
     raise ProtoException('unknown action type: ' + str(type_id))
+
+def write_space(sock, space):
+    """
+    Encode and write a gym.Space.
+    """
+    write_field_str(sock, json.dumps(space_json(space)))
+
+def space_json(space):
+    """
+    Encode a gym.Space as JSON.
+    """
+    if isinstance(space, spaces.Box):
+        # JSON doesn't support infinity.
+        bound = 1e30
+        return {
+            'type': 'Box',
+            'shape': space.shape,
+            'low': np.clip(space.low, -bound, bound).tolist(),
+            'high': np.clip(space.high, -bound, bound).tolist()
+        }
+    elif isinstance(space, spaces.Discrete):
+        return {
+            'type': 'Discrete',
+            'n': space.n
+        }
+    elif isinstance(space, spaces.MultiBinary):
+        return {
+            'type': 'MultiBinary',
+            'n': space.n
+        }
+    elif isinstance(space, spaces.MultiDiscrete):
+        return {
+            'type': 'MultiDiscrete',
+            'low': space.low.tolist(),
+            'high': space.high.tolist()
+        }
+    elif isinstance(space, spaces.Tuple):
+        return {
+            'type': 'Tuple',
+            'subspaces': [space_json(sub) for sub in space.spaces]
+        }
+    else:
+        raise ProtoException('unknown space type: ' + str(type(space)))
+
+def read_space_id(sock):
+    """
+    Read a space ID and convert it to a string.
+    """
+    space_id = read_byte(sock)
+    if space_id == 0:
+        return 'action'
+    elif space_id == 1:
+        return 'observation'
+    raise ProtoException('unknown space ID: ' + str(space_id))
