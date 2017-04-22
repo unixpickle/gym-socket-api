@@ -10,9 +10,9 @@ def main():
     Parse command-line arguments and invoke server.
     """
     parser = ArgumentParser()
-    parser.add_argument('-p', '--port', action='store', type='int',
+    parser.add_argument('-p', '--port', action='store', type=int,
                         dest='port', default=5001)
-    options = parser.parse_args()[0]
+    options = parser.parse_args()
     server.serve(options.port)
 
 if __name__ == '__main__':
