@@ -79,7 +79,7 @@ This packet samples an action from the action space. It can be used as follows:
 |Source   |Type                  | Description           |
 |---------|----------------------|-----------------------|
 |Client   |uint8                 | Packet type (3)       |
-|Server   |[action](#Actions)    | Action data           |
+|Server   |[action](#actions)    | Action data           |
 
 ### Packet: Monitor
 
