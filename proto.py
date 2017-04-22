@@ -40,6 +40,8 @@ def read_packet_type(sock):
         return 'step'
     elif type_id == 2:
         return 'get_space'
+    elif type_id == 3:
+        return 'sample_action'
     raise ProtoException('unknown packet type: ' + str(type_id))
 
 def read_field(sock):
@@ -130,6 +132,14 @@ def read_action(sock):
         return json.loads(read_field_str(sock))
     raise ProtoException('unknown action type: ' + str(type_id))
 
+def write_action(sock, env, action):
+    """
+    Write an action object.
+    """
+    jsonable = env.action_space.to_jsonable(action)
+    sock.write(struct.pack('<B', 0))
+    write_field_str(sock, json.dumps(jsonable))
+
 def write_space(sock, space):
     """
     Encode and write a gym.Space.
@@ -146,8 +156,8 @@ def space_json(space):
         return {
             'type': 'Box',
             'shape': space.shape,
-            'low': np.clip(space.low, -bound, bound).tolist(),
-            'high': np.clip(space.high, -bound, bound).tolist()
+            'low': np.clip(space.low, -bound, bound).flatten().tolist(),
+            'high': np.clip(space.high, -bound, bound).flatten().tolist()
         }
     elif isinstance(space, spaces.Discrete):
         return {

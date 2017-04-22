@@ -60,13 +60,24 @@ This is packet type 2.
 
 This packet gets information about the observation or action space. It can be used as follows:
 
-|Source   |Type                         | Description           |
+|Source   |Type                  | Description           |
 |---------|----------------------|-----------------------|
 |Client   |uint8                 | Packet type (2)       |
 |Client   |uint8                 | Which space?          |
 |Server   |[space](#spaces)      | Space data            |
 
 The "Which space?" field is 0 for the action space or 1 for the observation space.
+
+### Packet: Sample Actions
+
+This is packet type 3.
+
+This packet samples an action from the action space. It can be used as follows:
+
+|Source   |Type                  | Description           |
+|---------|----------------------|-----------------------|
+|Client   |uint8                 | Packet type (3)       |
+|Server   |[action](#Actions)    | Action data           |
 
 ## Actions
 

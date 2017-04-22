@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 
 	gym "github.com/unixpickle/gym-socket-api/binding-go"
 )
@@ -28,7 +27,8 @@ func main() {
 	fmt.Println("Initial obs:", obs)
 
 	for {
-		action := rand.Intn(2)
+		var action int
+		must(conn.SampleAction(&action))
 		obs, rew, done, _, err := conn.Step(action)
 		must(err)
 		fmt.Printf("Step: rew=%f obs=%v\n", rew, obs)

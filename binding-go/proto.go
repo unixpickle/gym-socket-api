@@ -13,9 +13,10 @@ import (
 var byteOrder = binary.LittleEndian
 
 const (
-	packetReset    = 0
-	packetStep     = 1
-	packetGetSpace = 2
+	packetReset        = 0
+	packetStep         = 1
+	packetGetSpace     = 2
+	packetSampleAction = 3
 )
 
 const (
@@ -130,6 +131,21 @@ func decodeUint8Obs(data []byte) (Obs, error) {
 		Dims:   dims,
 		Values: data[len(data)-product:],
 	}, nil
+}
+
+func readAction(r io.Reader, dst interface{}) error {
+	var typeID uint8
+	if err := binary.Read(r, byteOrder, &typeID); err != nil {
+		return err
+	}
+	if typeID != 0 {
+		return fmt.Errorf("unsupported action type: %d", typeID)
+	}
+	jsonData, err := readByteField(r)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(jsonData, dst)
 }
 
 func writeAction(w io.Writer, act interface{}) error {

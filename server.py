@@ -80,6 +80,8 @@ def loop(sock, env):
             handle_step(sock, env)
         elif pack_type == 'get_space':
             handle_get_space(sock, env)
+        elif pack_type == 'sample_action':
+            handle_sample_action(sock, env)
 
 def handle_reset(sock, env):
     """
@@ -111,4 +113,12 @@ def handle_get_space(sock, env):
         proto.write_space(sock, env.action_space)
     elif space_id == 'observation':
         proto.write_space(sock, env.observation_space)
+    sock.flush()
+
+def handle_sample_action(sock, env):
+    """
+    Generate and send a random action.
+    """
+    action = env.action_space.sample()
+    proto.write_action(sock, env, action)
     sock.flush()

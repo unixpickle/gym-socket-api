@@ -27,7 +27,10 @@ type Env interface {
 	ObservationSpace() (*Space, error)
 
 	// SampleAction samples from the action space.
-	SampleAction() (interface{}, error)
+	//
+	// The action is written to dst in the same way
+	// that Obs.Unmarshal() does it.
+	SampleAction(dst interface{}) error
 
 	// Monitor sets the environment up to save results
 	// to the given directory.
@@ -120,8 +123,14 @@ func (c *connEnv) ObservationSpace() (*Space, error) {
 	return c.getSpace(observationSpace)
 }
 
-func (c *connEnv) SampleAction() (interface{}, error) {
-	panic("nyi")
+func (c *connEnv) SampleAction(dst interface{}) error {
+	if err := writePacketType(c.Buf, packetSampleAction); err != nil {
+		return err
+	}
+	if err := c.Buf.Flush(); err != nil {
+		return err
+	}
+	return readAction(c.Buf, dst)
 }
 
 func (c *connEnv) Monitor(dir string, force, resume bool) error {
