@@ -1,143 +1,52 @@
 """
-High-level code for listening for and handling client
-connections.
+Listen for client connections and dispatch handlers.
 """
 
 import os
-import socket
-import json
+import sys
+import subprocess
 
-import proto
-import gym
-import numpy as np
+if sys.version_info >= (3, 0):
+    import socketserver
+else:
+    import SocketServer as socketserver
 
 def serve(port):
     """
     Run a server on the given port.
     """
-    # TODO: use socketserver module.
-    sock = socket.socket()
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.bind(('127.0.0.1', port))
-    print('Listening on port %d...' % port)
-    sock.listen(10)
-    while True:
-        conn, addr = sock.accept()
-        pid = os.fork()
-        if pid == 0:
-            handle(conn, addr)
-            exit()
+    server = Server(('127.0.0.1', port), Handler)
+    server.serve_forever()
+
+class Server(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    """
+    The connection server.
+    """
+    allow_reuse_address = True
+
+class Handler(socketserver.BaseRequestHandler):
+    """
+    The connection handler.
+    """
+    def handle(self):
+        script_file = os.path.join(os.path.dirname(__file__), 'handler.py')
+        args = [
+            sys.executable,
+            script_file,
+            '-u',
+            str(self.client_address)
+        ]
+
+        if sys.version_info >= (3, 0):
+            sock = self.request.makefile('rwb', buffering=0)
         else:
-            conn.close()
+            sock = self.request.makefile('rwb', 0)
 
-def handle(conn, addr):
-    """
-    Handle a connection from a client.
-    """
-    print('Connection from %s' % str(addr))
-    sock_file = conn.makefile(mode='rwb')
-    try:
-        env = handshake(sock_file)
         try:
-            loop(sock_file, env)
+            print('Connection from ' + str(self.client_address))
+            proc = subprocess.Popen(args, stdin=sock, stdout=sock,
+                                    stderr=sys.stderr)
+            proc.wait()
         finally:
-            env.close()
-    except proto.ProtoException as exc:
-        print('%s gave error %s' % (str(addr), str(exc)))
-    finally:
-        print('Disconnect from %s' % str(addr))
-        sock_file.close()
-
-def handshake(sock):
-    """
-    Perform the initial handshake and return the resulting
-    Gym environment.
-    """
-    flags = proto.read_flags(sock)
-    if flags != 0:
-        raise proto.ProtoException('unsupported flags: ' + str(flags))
-    env_name = proto.read_field_str(sock)
-    try:
-        env = gym.make(env_name)
-        proto.write_field_str(sock, '')
-        sock.flush()
-        return env
-    except gym.error.Error as gym_exc:
-        proto.write_field_str(sock, str(gym_exc))
-        sock.flush()
-        raise gym_exc
-
-def loop(sock, env):
-    """
-    Handle commands from the client as they come in and
-    apply them to the given Gym environment.
-    """
-    while True:
-        pack_type = proto.read_packet_type(sock)
-        if pack_type == 'reset':
-            handle_reset(sock, env)
-        elif pack_type == 'step':
-            handle_step(sock, env)
-        elif pack_type == 'get_space':
-            handle_get_space(sock, env)
-        elif pack_type == 'sample_action':
-            handle_sample_action(sock, env)
-        elif pack_type == 'monitor':
-            env = handle_monitor(sock, env)
-        elif pack_type == 'render':
-            handle_render(env)
-
-def handle_reset(sock, env):
-    """
-    Reset the environment and send the result.
-    """
-    proto.write_obs(sock, env, env.reset())
-    sock.flush()
-
-def handle_step(sock, env):
-    """
-    Step the environment and send the result.
-    """
-    action = proto.read_action(sock)
-    if isinstance(action, list):
-        action = np.array(action)
-    obs, rew, done, info = env.step(action)
-    proto.write_obs(sock, env, obs)
-    proto.write_reward(sock, rew)
-    proto.write_bool(sock, done)
-    proto.write_field_str(sock, json.dumps(info))
-    sock.flush()
-
-def handle_get_space(sock, env):
-    """
-    Get information about the action or observation space.
-    """
-    space_id = proto.read_space_id(sock)
-    if space_id == 'action':
-        proto.write_space(sock, env.action_space)
-    elif space_id == 'observation':
-        proto.write_space(sock, env.observation_space)
-    sock.flush()
-
-def handle_sample_action(sock, env):
-    """
-    Generate and send a random action.
-    """
-    action = env.action_space.sample()
-    proto.write_action(sock, env, action)
-    sock.flush()
-
-def handle_monitor(sock, env):
-    """
-    Start a monitor and return the new environment.
-    """
-    resume = proto.read_bool(sock)
-    force = proto.read_bool(sock)
-    dir_path = proto.read_field_str(sock)
-    return gym.wrappers.Monitor(env, dir_path, resume=resume, force=force)
-
-def handle_render(env):
-    """
-    Render the environment.
-    """
-    env.render()
+            sock.close()
+            print('Disconnected from ' + str(self.client_address))
