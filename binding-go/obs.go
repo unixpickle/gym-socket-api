@@ -1,6 +1,11 @@
 package gym
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"errors"
+
+	"github.com/unixpickle/essentials"
+)
 
 // Obs is an observation from an environment.
 type Obs interface {
@@ -22,6 +27,65 @@ type Obs interface {
 // The caller should not modify it.
 type Uint8Obs interface {
 	Uint8Obs() []uint8
+}
+
+// Flatten turns a tensor observation into a 1-dimensional
+// vector.
+// This fails if the observation is not a tensor.
+func Flatten(o Obs) ([]float64, error) {
+	if u8, ok := o.(Uint8Obs); ok {
+		nums := u8.Uint8Obs()
+		res := make([]float64, len(nums))
+		for i, x := range nums {
+			res[i] = float64(x)
+		}
+		return res, nil
+	}
+
+	var sliceObs []interface{}
+	if err := o.Unmarshal(&sliceObs); err != nil {
+		return nil, essentials.AddCtx("flatten", err)
+	}
+
+	if res, ok := flatten(sliceObs); ok {
+		return res, nil
+	} else {
+		return nil, errors.New("flatten: bad observation type")
+	}
+}
+
+func flatten(obj []interface{}) ([]float64, bool) {
+	if len(obj) == 0 {
+		return nil, true
+	}
+	switch obj[0].(type) {
+	case float64:
+		res := make([]float64, len(obj))
+		for i, x := range obj {
+			f64, ok := x.(float64)
+			if !ok {
+				return nil, false
+			}
+			res[i] = f64
+		}
+		return res, true
+	case []interface{}:
+		var res []float64
+		for _, child := range obj {
+			subList, ok := child.([]interface{})
+			if !ok {
+				return nil, false
+			}
+			subRes, ok := flatten(subList)
+			if !ok {
+				return nil, false
+			}
+			res = append(res, subRes...)
+		}
+		return res, true
+	default:
+		return nil, false
+	}
 }
 
 // jsonObs is an observation which was encoded as JSON.

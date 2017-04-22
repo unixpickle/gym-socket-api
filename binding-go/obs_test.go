@@ -41,3 +41,37 @@ func TestUint8Obs(t *testing.T) {
 		t.Errorf("expected %v but got %v", expected, actual)
 	}
 }
+
+func TestFlatten(t *testing.T) {
+	ins := []Obs{
+		jsonObs("[[1, 2], [3, 4], [5, 6]]"),
+		jsonObs("[1, 3, 2]"),
+		&uint8Obs{Dims: []int{2, 2}, Values: []uint8{3, 2, 10, 4}},
+	}
+	outs := [][]float64{
+		{1, 2, 3, 4, 5, 6},
+		{1, 3, 2},
+		{3, 2, 10, 4},
+	}
+	for i, in := range ins {
+		actual, err := Flatten(in)
+		if err != nil {
+			t.Errorf("case %d: %s", i, err)
+			continue
+		}
+		expected := outs[i]
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("case %d: expected %v but got %v", i, expected, actual)
+		}
+	}
+	failures := []Obs{
+		jsonObs("1"),
+		jsonObs("[1, 2, [1, 2]]"),
+		jsonObs("[[1, 2], 1]"),
+	}
+	for i, in := range failures {
+		if _, err := Flatten(in); err == nil {
+			t.Errorf("failure case %d: should fail", i)
+		}
+	}
+}
