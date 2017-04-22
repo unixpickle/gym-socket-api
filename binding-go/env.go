@@ -39,7 +39,7 @@ type Env interface {
 	//
 	// If the directory is a relative path, it should be
 	// relative to the current working directory.
-	Monitor(dir string, force, resume bool) error
+	Monitor(dir string, force, resume, video bool) error
 
 	// Render graphically renders the environment.
 	Render() error
@@ -142,12 +142,12 @@ func (c *connEnv) SampleAction(dst interface{}) (err error) {
 	return readAction(c.Buf, dst)
 }
 
-func (c *connEnv) Monitor(dir string, force, resume bool) (err error) {
+func (c *connEnv) Monitor(dir string, force, resume, video bool) (err error) {
 	essentials.AddCtxTo("monitor environment", &err)
 	if err := writePacketType(c.Buf, packetMonitor); err != nil {
 		return err
 	}
-	for _, b := range []bool{resume, force} {
+	for _, b := range []bool{resume, force, video} {
 		if err := writeBool(c.Buf, b); err != nil {
 			return err
 		}

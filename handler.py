@@ -129,9 +129,14 @@ def handle_monitor(sock, env):
     """
     resume = proto.read_bool(sock)
     force = proto.read_bool(sock)
+    video = proto.read_bool(sock)
     dir_path = proto.read_field_str(sock)
     try:
-        res = wrappers.Monitor(env, dir_path, resume=resume, force=force)
+        vid_call = None
+        if not video:
+            vid_call = lambda count: False
+        res = wrappers.Monitor(env, dir_path, resume=resume, force=force,
+                               video_callable=vid_call)
         proto.write_field_str(sock, '')
         sock.flush()
         return res

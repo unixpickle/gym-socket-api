@@ -92,6 +92,7 @@ This packet tells the server to wrap the current environment in a monitor. It ca
 |Client   |uint8                 | Packet type (4)       |
 |Client   |bool                  | Resume                |
 |Client   |bool                  | Force                 |
+|Client   |bool                  | Video                 |
 |Client   |uint32                | Dir path length       |
 |Client   |string                | Dir path              |
 |Server   |uint32                | Error length          |
