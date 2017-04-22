@@ -30,7 +30,8 @@ def handle(sock_file, addr):
         try:
             loop(sock_file, env)
         finally:
-            env.close()
+            if not env is None:
+                env.close()
     except proto.ProtoException as exc:
         log('%s gave error: %s' % (addr, str(exc)))
 
@@ -43,6 +44,13 @@ def handshake(sock):
     if flags != 0:
         raise proto.ProtoException('unsupported flags: ' + str(flags))
     env_name = proto.read_field_str(sock)
+
+    # Special no-environment mode.
+    if env_name == '':
+        proto.write_field_str(sock, '')
+        sock.flush()
+        return None
+
     try:
         env = gym.make(env_name)
         proto.write_field_str(sock, '')
@@ -72,6 +80,8 @@ def loop(sock, env):
             env = handle_monitor(sock, env)
         elif pack_type == 'render':
             handle_render(env)
+        elif pack_type == 'upload':
+            handle_upload(sock)
 
 def handle_reset(sock, env):
     """
@@ -127,6 +137,23 @@ def handle_render(env):
     Render the environment.
     """
     env.render()
+
+def handle_upload(sock):
+    """
+    Upload a monitor to the Gym website.
+    """
+    dir_path = proto.read_field_str(sock)
+    api_key = proto.read_field_str(sock)
+    alg_id = proto.read_field_str(sock)
+    if alg_id == '':
+        alg_id = None
+    try:
+        gym.upload(dir_path, api_key=api_key, algorithm_id=alg_id)
+        proto.write_field_str(sock, '')
+        sock.flush()
+    except gym.error.Error as exc:
+        proto.write_field_str(sock, str(exc))
+        sock.flush()
 
 def log(msg):
     """

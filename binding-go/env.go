@@ -3,7 +3,9 @@ package gym
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"net"
+	"os"
 	"path/filepath"
 	"sync"
 
@@ -72,6 +74,52 @@ func Make(host, envName string) (env Env, err error) {
 	return &connEnv{Buf: rw, Conn: conn}, nil
 }
 
+// Upload connects to the API host and uses it to upload a
+// monitor directory to the Gym website.
+//
+// If the API key is "", the OPENAI_GYM_API_KEY
+// environment variable is used.
+//
+// If the directory is a relative path, it should be
+// relative to the current working directory.
+func Upload(apiHost, dir, apiKey, algorithmID string) (err error) {
+	essentials.AddCtxTo("upload monitor", &err)
+	env, err := Make(apiHost, "")
+	if err != nil {
+		return err
+	}
+	c := env.(*connEnv)
+	defer c.Close()
+
+	if apiKey == "" {
+		apiKey = os.Getenv("OPENAI_GYM_API_KEY")
+	}
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return err
+	}
+
+	if err := writePacketType(c.Buf, packetUpload); err != nil {
+		return err
+	}
+	for _, str := range []string{absDir, apiKey, algorithmID} {
+		if err := writeByteField(c.Buf, []byte(str)); err != nil {
+			return err
+		}
+	}
+	if err := c.Buf.Flush(); err != nil {
+		return err
+	}
+
+	if errMsg, err := readByteField(c.Buf); err != nil {
+		return err
+	} else if len(errMsg) > 0 {
+		return errors.New(string(errMsg))
+	}
+
+	return nil
+}
+
 func (c *connEnv) Reset() (obs Obs, err error) {
 	defer essentials.AddCtxTo("reset environment", &err)
 	c.CmdLock.Lock()
@@ -130,7 +178,8 @@ func (c *connEnv) ObservationSpace() (*Space, error) {
 	return c.getSpace(observationSpace)
 }
 
-func (c *connEnv) SampleAction(dst interface{}) error {
+func (c *connEnv) SampleAction(dst interface{}) (err error) {
+	essentials.AddCtxTo("sample actino", &err)
 	if err := writePacketType(c.Buf, packetSampleAction); err != nil {
 		return err
 	}
@@ -140,7 +189,8 @@ func (c *connEnv) SampleAction(dst interface{}) error {
 	return readAction(c.Buf, dst)
 }
 
-func (c *connEnv) Monitor(dir string, force, resume bool) error {
+func (c *connEnv) Monitor(dir string, force, resume bool) (err error) {
+	essentials.AddCtxTo("monitor environment", &err)
 	if err := writePacketType(c.Buf, packetMonitor); err != nil {
 		return err
 	}
@@ -162,7 +212,8 @@ func (c *connEnv) Monitor(dir string, force, resume bool) error {
 	return nil
 }
 
-func (c *connEnv) Render() error {
+func (c *connEnv) Render() (err error) {
+	essentials.AddCtxTo("render environment", &err)
 	if err := writePacketType(c.Buf, packetRender); err != nil {
 		return err
 	}
@@ -173,7 +224,8 @@ func (c *connEnv) Close() error {
 	return c.Conn.Close()
 }
 
-func (c *connEnv) getSpace(spaceID int) (*Space, error) {
+func (c *connEnv) getSpace(spaceID int) (space *Space, err error) {
+	essentials.AddCtxTo("get space info", &err)
 	if err := writePacketType(c.Buf, packetGetSpace); err != nil {
 		return nil, err
 	}
@@ -187,9 +239,8 @@ func (c *connEnv) getSpace(spaceID int) (*Space, error) {
 	if err != nil {
 		return nil, err
 	}
-	var s *Space
-	if err := json.Unmarshal(data, &s); err != nil {
+	if err := json.Unmarshal(data, &space); err != nil {
 		return nil, err
 	}
-	return s, nil
+	return
 }

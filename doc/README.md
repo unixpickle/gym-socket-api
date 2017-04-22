@@ -8,6 +8,8 @@ Whenever there's an error field, it can be an empty string to indicate success.
 
 During this stage, the client initiates a connection and requests an environment. The server attempts to create the environment, or fails with an error (e.g. if the environment does not exist).
 
+As a special case, the environment name may be the empty string. In this case, the client may not run any commands which act on an environment.
+
 |Source   |Type    | Description           |
 |---------|--------|-----------------------|
 |Client   |uint8   | Flags (all 0)         |
@@ -102,6 +104,24 @@ This packet tells the server to render the current environment.
 |Source   |Type                  | Description           |
 |---------|----------------------|-----------------------|
 |Client   |uint8                 | Packet type (5)       |
+
+### Packet: Upload
+
+This is packet type 6.
+
+This packet tells the server to upload a monitor directory to OpenAI Gym.
+
+|Source   |Type                  | Description           |
+|---------|----------------------|-----------------------|
+|Client   |uint8                 | Packet type (6)       |
+|Client   |uint32                | Dir path length       |
+|Client   |string                | Dir path              |
+|Client   |uint32                | API key length        |
+|Client   |string                | API key               |
+|Client   |uint32                | Algorithm ID length   |
+|Client   |string                | Algorithm ID          |
+|Server   |uint32                | Error length          |
+|Server   |string                | Error message         |
 
 ## Actions
 

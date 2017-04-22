@@ -9,38 +9,60 @@ import (
 const Host = "localhost:5001"
 
 func main() {
-	conn, err := gym.Make(Host, "CartPole-v0")
+	// Make an instance of the given environment.
+	env, err := gym.Make(Host, "CartPole-v0")
 	must(err)
 
-	defer conn.Close()
+	// Gracefully clean-up when we exit (although this
+	// isn't strictly necessary).
+	defer env.Close()
 
-	must(conn.Monitor("gym-monitor", true, false))
+	// Start monitoring to "./gym-monitor".
+	must(env.Monitor("gym-monitor", true, false))
 
-	actionSpace, err := conn.ActionSpace()
+	// Dump info about the action space.
+	actionSpace, err := env.ActionSpace()
 	must(err)
 	fmt.Printf("Action space: %#v\n", actionSpace)
 
-	obsSpace, err := conn.ObservationSpace()
+	// Dump info about the observation space.
+	obsSpace, err := env.ObservationSpace()
 	must(err)
 	fmt.Printf("Observation space: %#v\n", obsSpace)
 
-	obs, err := conn.Reset()
+	// Reset the environment and get initial observation.
+	obs, err := env.Reset()
 	must(err)
 	fmt.Println("Initial obs:", obs)
 
-	must(conn.Render())
+	// Throw up a GUI window of the environment.
+	must(env.Render())
 
 	for {
+		// Get a random action.
 		var action int
-		must(conn.SampleAction(&action))
-		obs, rew, done, _, err := conn.Step(action)
-		must(conn.Render())
+		must(env.SampleAction(&action))
+
+		// Take a step in the environment.
+		obs, rew, done, _, err := env.Step(action)
 		must(err)
+
+		// Render the updated environment in the GUI.
+		must(env.Render())
+
+		// Print output of current step.
 		fmt.Printf("Step: rew=%f obs=%v\n", rew, obs)
 		if done {
 			break
 		}
 	}
+
+	// This is an example of how you might upload
+	// your results to the OpenAI Gym.
+	//
+	//     env.Close()
+	//     must(gym.Upload(Host, "gym-monitor", "", ""))
+	//
 }
 
 func must(err error) {

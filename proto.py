@@ -34,19 +34,12 @@ def read_packet_type(sock):
     human-readable string.
     """
     type_id = read_byte(sock)
-    if type_id == 0:
-        return 'reset'
-    elif type_id == 1:
-        return 'step'
-    elif type_id == 2:
-        return 'get_space'
-    elif type_id == 3:
-        return 'sample_action'
-    elif type_id == 4:
-        return 'monitor'
-    elif type_id == 5:
-        return 'render'
-    raise ProtoException('unknown packet type: ' + str(type_id))
+    mapping = {0: 'reset', 1: 'step', 2: 'get_space', 3: 'sample_action',
+               4: 'monitor', 5: 'render', 6: 'upload'}
+    if not type_id in mapping.keys():
+        raise ProtoException('unknown packet type: ' + str(type_id))
+    return mapping[type_id]
+
 
 def read_field(sock):
     """

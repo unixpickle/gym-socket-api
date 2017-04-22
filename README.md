@@ -4,7 +4,7 @@ This will be a fast and stable API for accessing [OpenAI Gym](https://gym.openai
 
 **Disclaimer:** I don't know Python.
 
-# Why not use the official bindings?
+# Why not openai/gym-http-api?
 
 There are already official language bindings for OpenAI Gym in [openai/gym-http-api](https://github.com/openai/gym-http-api). Here are some reasons why gym-socket-api is still necessary:
 

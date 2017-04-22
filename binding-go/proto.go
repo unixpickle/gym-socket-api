@@ -19,6 +19,7 @@ const (
 	packetSampleAction = 3
 	packetMonitor      = 4
 	packetRender       = 5
+	packetUpload       = 6
 )
 
 const (
