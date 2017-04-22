@@ -130,8 +130,7 @@ func writeAction(w io.Writer, act interface{}) error {
 	if _, err := w.Write([]byte{actionJSON}); err != nil {
 		return err
 	}
-	_, err = w.Write(jsonData)
-	return err
+	return writeByteField(w, jsonData)
 }
 
 func readReward(r io.Reader) (float64, error) {

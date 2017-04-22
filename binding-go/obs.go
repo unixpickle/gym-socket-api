@@ -31,6 +31,10 @@ func (j jsonObs) Unmarshal(dst interface{}) error {
 	return json.Unmarshal(j, dst)
 }
 
+func (j jsonObs) String() string {
+	return string(j)
+}
+
 // uint8Obs is an observation which was encoded as a raw
 // array of 8-bit unsigned integers.
 type uint8Obs struct {
