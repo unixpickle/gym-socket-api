@@ -16,6 +16,7 @@ def serve(port):
     Run a server on the given port.
     """
     server = Server(('127.0.0.1', port), Handler)
+    print('Listening on port ' + str(port) + '...')
     server.serve_forever()
 
 class Server(socketserver.ThreadingMixIn, socketserver.TCPServer):
