@@ -1,12 +1,20 @@
+"""
+High-level code for listening for and handling client
+connections.
+"""
+
 import os
 import socket
-import traceback
+import json
+
 import proto
 import gym
 import numpy as np
-import json
 
 def serve(port):
+    """
+    Run a server on the given port.
+    """
     # TODO: use socketserver module.
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -23,34 +31,45 @@ def serve(port):
             conn.close()
 
 def handle(conn, addr):
+    """
+    Handle a connection from a client.
+    """
     print('Connection from %s' % str(addr))
-    f = conn.makefile(mode='rwb')
+    sock_file = conn.makefile(mode='rwb')
     try:
-        env = handshake(f)
+        env = handshake(sock_file)
         try:
-            loop(f, env)
+            loop(sock_file, env)
         finally:
             env.close()
-    except Exception as e:
-        print('Error from %s' % str(addr))
-        traceback.print_exc()
     finally:
-        f.close()
+        print('Disconnect from %s' % str(addr))
+        sock_file.close()
 
 def handshake(sock):
+    """
+    Perform the initial handshake and return the resulting
+    Gym environment.
+    """
     flags = proto.read_flags(sock)
-    envName = proto.read_field_str(sock)
+    if flags != 0:
+        raise proto.ProtoException('unsupported flags: ' + str(flags))
+    env_name = proto.read_field_str(sock)
     try:
-        env = gym.make(envName)
+        env = gym.make(env_name)
         proto.write_field_str(sock, '')
         sock.flush()
         return env
-    except gym.error.Error as e:
-        proto.write_field_str(sock, str(e))
+    except gym.error.Error as gym_exc:
+        proto.write_field_str(sock, str(gym_exc))
         sock.flush()
-        raise e
+        raise gym_exc
 
 def loop(sock, env):
+    """
+    Handle commands from the client as they come in and
+    apply them to the given Gym environment.
+    """
     while True:
         pack_type = proto.read_packet_type(sock)
         if pack_type == 'reset':
@@ -59,10 +78,16 @@ def loop(sock, env):
             handle_step(sock, env)
 
 def handle_reset(sock, env):
+    """
+    Reset the environment and send the result.
+    """
     send_obs(sock, env, env.reset())
     sock.flush()
 
 def handle_step(sock, env):
+    """
+    Step the environment and send the result.
+    """
     action = proto.read_action(sock)
     if isinstance(action, list):
         action = np.array(action)
@@ -74,6 +99,9 @@ def handle_step(sock, env):
     sock.flush()
 
 def send_obs(sock, env, obs):
+    """
+    Encode and send an observation.
+    """
     if isinstance(obs, np.ndarray):
         if obs.dtype == 'uint8':
             proto.write_obs_byte_list(sock, obs)
