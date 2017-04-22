@@ -133,6 +133,8 @@ func (c *connEnv) ObservationSpace() (*Space, error) {
 
 func (c *connEnv) SampleAction(dst interface{}) (err error) {
 	essentials.AddCtxTo("sample actino", &err)
+	c.CmdLock.Lock()
+	defer c.CmdLock.Unlock()
 	if err := writePacketType(c.Buf, packetSampleAction); err != nil {
 		return err
 	}
@@ -144,6 +146,8 @@ func (c *connEnv) SampleAction(dst interface{}) (err error) {
 
 func (c *connEnv) Monitor(dir string, force, resume, video bool) (err error) {
 	essentials.AddCtxTo("monitor environment", &err)
+	c.CmdLock.Lock()
+	defer c.CmdLock.Unlock()
 	if err := writePacketType(c.Buf, packetMonitor); err != nil {
 		return err
 	}
@@ -172,6 +176,8 @@ func (c *connEnv) Monitor(dir string, force, resume, video bool) (err error) {
 
 func (c *connEnv) Render() (err error) {
 	essentials.AddCtxTo("render environment", &err)
+	c.CmdLock.Lock()
+	defer c.CmdLock.Unlock()
 	if err := writePacketType(c.Buf, packetRender); err != nil {
 		return err
 	}
@@ -184,6 +190,8 @@ func (c *connEnv) Close() error {
 
 func (c *connEnv) getSpace(spaceID int) (space *Space, err error) {
 	essentials.AddCtxTo("get space info", &err)
+	c.CmdLock.Lock()
+	defer c.CmdLock.Unlock()
 	if err := writePacketType(c.Buf, packetGetSpace); err != nil {
 		return nil, err
 	}
