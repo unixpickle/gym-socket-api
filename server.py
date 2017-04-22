@@ -85,7 +85,7 @@ def loop(sock, env):
         elif pack_type == 'monitor':
             env = handle_monitor(sock, env)
         elif pack_type == 'render':
-            handle_render(sock, env)
+            handle_render(env)
 
 def handle_reset(sock, env):
     """
