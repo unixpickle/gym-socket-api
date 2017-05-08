@@ -131,13 +131,18 @@ def write_bool(sock, flag):
         num = 1
     sock.write(struct.pack('<B', num))
 
-def read_action(sock):
+def read_action(sock, env):
     """
     Read an action object.
     """
     type_id = read_byte(sock)
     if type_id == 0:
-        return json.loads(read_field_str(sock))
+        obj = json.loads(read_field_str(sock))
+        is_tuple = isinstance(env.action_space, spaces.Tuple)
+        if isinstance(obj, list) and not is_tuple:
+            return np.array(obj)
+        # TODO: run np.array on sub-elements of tuples.
+        return obj
     raise ProtoException('unknown action type: ' + str(type_id))
 
 def write_action(sock, env, action):

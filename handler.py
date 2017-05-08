@@ -11,7 +11,6 @@ import sys
 import proto
 import gym
 from gym import wrappers
-import numpy as np
 
 def main():
     """
@@ -94,9 +93,7 @@ def handle_step(sock, env):
     """
     Step the environment and send the result.
     """
-    action = proto.read_action(sock)
-    if isinstance(action, list):
-        action = np.array(action)
+    action = proto.read_action(sock, env)
     obs, rew, done, info = env.step(action)
     proto.write_obs(sock, env, obs)
     proto.write_reward(sock, rew)
