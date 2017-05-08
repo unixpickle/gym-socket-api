@@ -75,3 +75,29 @@ func TestFlatten(t *testing.T) {
 		}
 	}
 }
+
+func TestUnpackTuple(t *testing.T) {
+	obj := jsonObs("[1, 2, [1, 2, 3]]")
+	obses, err := UnpackTuple(obj)
+	if err != nil {
+		t.Fatal(err)
+	} else if len(obses) != 3 {
+		t.Fatalf("expected 3 observations but got %d", len(obses))
+	}
+
+	var obs1, obs2 int
+	var obs3 []int
+	ptrs := []interface{}{&obs1, &obs2, &obs3}
+	for i, ptr := range ptrs {
+		if err := obses[i].Unmarshal(ptr); err != nil {
+			t.Fatalf("unmarshal obs %d: %s", i, err)
+		}
+	}
+	expected := []interface{}{1, 2, []int{1, 2, 3}}
+	for i, x := range expected {
+		a := reflect.ValueOf(ptrs[i]).Elem().Interface()
+		if !reflect.DeepEqual(a, x) {
+			t.Errorf("obs %d: should be %v but got %v", i, x, a)
+		}
+	}
+}

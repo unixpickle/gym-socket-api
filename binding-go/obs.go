@@ -88,6 +88,25 @@ func flatten(obj []interface{}) ([]float64, bool) {
 	}
 }
 
+// UnpackTuple separates a tuple observation into its
+// children observation.
+func UnpackTuple(o Obs) (children []Obs, err error) {
+	defer essentials.AddCtxTo("unpack tuple", &err)
+	var list []interface{}
+	if err := o.Unmarshal(&list); err != nil {
+		return nil, err
+	}
+	var res []Obs
+	for _, obj := range list {
+		jsonData, err := json.Marshal(obj)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, jsonObs(jsonData))
+	}
+	return res, nil
+}
+
 // jsonObs is an observation which was encoded as JSON.
 type jsonObs []byte
 
