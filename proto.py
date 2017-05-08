@@ -81,7 +81,7 @@ def write_obs(sock, env, obs):
         if obs.dtype == 'uint8':
             write_obs_byte_list(sock, obs)
             return
-    jsonable = env.observation_space.to_jsonable(obs)
+    jsonable = env.observation_space.to_jsonable([obs])[0]
     write_obs_json(sock, jsonable)
 
 def write_obs_json(sock, jsonable):
@@ -138,18 +138,14 @@ def read_action(sock, env):
     type_id = read_byte(sock)
     if type_id == 0:
         obj = json.loads(read_field_str(sock))
-        is_tuple = isinstance(env.action_space, spaces.Tuple)
-        if isinstance(obj, list) and not is_tuple:
-            return np.array(obj)
-        # TODO: run np.array on sub-elements of tuples.
-        return obj
+        return from_jsonable(env.action_space, obj)
     raise ProtoException('unknown action type: ' + str(type_id))
 
 def write_action(sock, env, action):
     """
     Write an action object.
     """
-    jsonable = env.action_space.to_jsonable(action)
+    jsonable = env.action_space.to_jsonable([action])[0]
     sock.write(struct.pack('<B', 0))
     write_field_str(sock, json.dumps(jsonable))
 
@@ -206,3 +202,14 @@ def read_space_id(sock):
     elif space_id == 1:
         return 'observation'
     raise ProtoException('unknown space ID: ' + str(space_id))
+
+def from_jsonable(space, obj):
+    """
+    Decode a space element from JSON.
+    """
+    if isinstance(space, spaces.Tuple):
+        # Deal with bug in gym <= 0.7.4.
+        return tuple(
+            [from_jsonable(space, obj[i]) for i, space in enumerate(space.spaces)]
+        )
+    return space.from_jsonable(obj)
