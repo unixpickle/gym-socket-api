@@ -18,7 +18,7 @@ func main() {
 	defer env.Close()
 
 	// Start monitoring to "./gym-monitor".
-	must(env.Monitor("gym-monitor", true, false))
+	must(env.Monitor("gym-monitor", true, false, true))
 
 	// Dump info about the action space.
 	actionSpace, err := env.ActionSpace()
