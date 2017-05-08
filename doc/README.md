@@ -142,7 +142,7 @@ The available action types are listed below.
 
 This is action type 0.
 
-The data inside the action is a JSON string for the space's `from_jsonable` method.
+The JSON format is similar to the action space's `to_jsonable` method. However, tuples are encoded as a list of elements rather than as a list of lists of elements.
 
 ## Observations
 
@@ -160,7 +160,7 @@ The available observation types are listed below.
 
 This is observation type 0.
 
-The data in the packet is a JSON string from the space's `to_jsonable` method.
+The JSON format is similar to the observation space's `to_jsonable` method. However, tuples are encoded as a list of elements rather than as a list of lists of elements.
 
 ### Observation: Byte List
 

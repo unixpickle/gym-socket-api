@@ -81,7 +81,7 @@ def write_obs(sock, env, obs):
         if obs.dtype == 'uint8':
             write_obs_byte_list(sock, obs)
             return
-    jsonable = env.observation_space.to_jsonable([obs])[0]
+    jsonable = to_jsonable(env.observation_space, obs)
     write_obs_json(sock, jsonable)
 
 def write_obs_json(sock, jsonable):
@@ -145,7 +145,7 @@ def write_action(sock, env, action):
     """
     Write an action object.
     """
-    jsonable = env.action_space.to_jsonable([action])[0]
+    jsonable = to_jsonable(env.action_space, action)
     sock.write(struct.pack('<B', 0))
     write_field_str(sock, json.dumps(jsonable))
 
@@ -212,4 +212,12 @@ def from_jsonable(space, obj):
         return tuple(
             [from_jsonable(space, obj[i]) for i, space in enumerate(space.spaces)]
         )
-    return space.from_jsonable(obj)
+    return space.from_jsonable([obj])[0]
+
+def to_jsonable(space, obj):
+    """
+    Encode a space element as JSON.
+    """
+    if isinstance(space, spaces.Tuple):
+        return [to_jsonable(space, obj[i]) for i, space in enumerate(space.spaces)]
+    return space.to_jsonable([obj])[0]
