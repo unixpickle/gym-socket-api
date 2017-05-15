@@ -208,7 +208,6 @@ def from_jsonable(space, obj):
     Decode a space element from JSON.
     """
     if isinstance(space, spaces.Tuple):
-        # Deal with bug in gym <= 0.7.4.
         return tuple(
             [from_jsonable(space, obj[i]) for i, space in enumerate(space.spaces)]
         )
