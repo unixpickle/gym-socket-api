@@ -189,8 +189,9 @@ def space_json(space):
             'type': 'Tuple',
             'subspaces': [space_json(sub) for sub in space.spaces]
         }
-    else:
-        raise ProtoException('unknown space type: ' + str(type(space)))
+    return {
+        'type': type(space).__name__
+    }
 
 def read_space_id(sock):
     """

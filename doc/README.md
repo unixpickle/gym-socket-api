@@ -240,3 +240,11 @@ Tuple spaces:
   ],
 }
 ```
+
+Other spaces:
+
+```json
+{
+  "type": "CLASS_NAME_HERE"
+}
+```
