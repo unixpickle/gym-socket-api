@@ -12,11 +12,12 @@ if sys.version_info >= (3, 0):
 else:
     import SocketServer as socketserver
 
-def serve(port):
+def serve(port=5001, universe=False):
     """
     Run a server on the given port.
     """
     server = Server(('127.0.0.1', port), Handler)
+    server.universe = universe
     print('Listening on port ' + str(port) + '...')
     server.serve_forever()
 
@@ -25,6 +26,7 @@ class Server(socketserver.ThreadingMixIn, socketserver.TCPServer):
     The connection server.
     """
     allow_reuse_address = True
+    universe = False
 
 class Handler(socketserver.BaseRequestHandler):
     """
@@ -40,6 +42,9 @@ class Handler(socketserver.BaseRequestHandler):
             '--fd',
             str(self.request.fileno())
         ]
+
+        if self.server.universe:
+            args.append('--universe')
 
         # Greatly reduces latency on Linux.
         if sys.platform in ['linux', 'linux2', 'darwin']:

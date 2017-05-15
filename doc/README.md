@@ -126,6 +126,44 @@ This packet tells the server to upload a monitor directory to OpenAI Gym.
 |Server   |uint32                | Error length          |
 |Server   |string                | Error message         |
 
+### Packet: Universe Configure
+
+This is packet type 7.
+
+Make a `configure()` call for an OpenAI Universe environment. You must call this before using a Universe environment. Once this has been called, no more Wrap Universe calls can be made.
+
+|Source   |Type                  | Description           |
+|---------|----------------------|-----------------------|
+|Client   |uint8                 | Packet type (7)       |
+|Client   |uint32                | Configuration length  |
+|Client   |string                | Configuration JSON    |
+|Server   |uint32                | Error length          |
+|Server   |string                | Error message         |
+
+The configuration JSON is passed as `kwargs` to the `configure()` method.
+
+### Packet: Universe Wrap
+
+This is packet type 8.
+
+Wrap an OpenAI Universe environment. This packet type should only be used before a Universe Configure packet has been sent.
+
+|Source   |Type                  | Description           |
+|---------|----------------------|-----------------------|
+|Client   |uint8                 | Packet type (8)       |
+|Client   |uint32                | Wrapper name length   |
+|Client   |string                | Wrapper name          |
+|Client   |uint32                | Configuration length  |
+|Client   |string                | Configuration JSON    |
+|Server   |uint32                | Error length          |
+|Server   |string                | Error message         |
+
+The configuration JSON is passed as `kwargs` to the wrapper.
+
+The "CropObservations" wrapper crops the screen images to the region of interest.
+
+The "Vision" wrapper simplifies observations to be a framebuffer and nothing else. Otherwise, observations are objects with a `text` field and a `vision` field.
+
 ## Actions
 
 Actions are encoded in a type-specific manner. They are of the form:

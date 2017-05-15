@@ -35,7 +35,8 @@ def read_packet_type(sock):
     """
     type_id = read_byte(sock)
     mapping = {0: 'reset', 1: 'step', 2: 'get_space', 3: 'sample_action',
-               4: 'monitor', 5: 'render', 6: 'upload'}
+               4: 'monitor', 5: 'render', 6: 'upload', 7: 'universe_configure',
+               8: 'universe_wrap'}
     if not type_id in mapping.keys():
         raise ProtoException('unknown packet type: ' + str(type_id))
     return mapping[type_id]

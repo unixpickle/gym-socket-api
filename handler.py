@@ -12,6 +12,7 @@ import sys
 import proto
 import gym
 from gym import wrappers
+import universe_plugin
 
 def main():
     """
@@ -20,24 +21,26 @@ def main():
     parser = ArgumentParser()
     parser.add_argument('--addr', action='store', type=str, dest='addr')
     parser.add_argument('--fd', action='store', type=int, dest='fd')
+    parser.add_argument('--universe', action='store_true', dest='universe')
     options = parser.parse_args()
     in_file = io.open(options.fd, 'rb', buffering=0)
     out_file = io.open(options.fd, 'wb', buffering=0)
-    handle(io.BufferedRWPair(in_file, out_file), options.addr)
+    handle(io.BufferedRWPair(in_file, out_file), options)
 
-def handle(sock_file, addr):
+def handle(sock_file, info):
     """
     Handle a connection from a client.
     """
     try:
+        uni = universe_plugin.Universe(info.universe)
         env = handshake(sock_file)
         try:
-            loop(sock_file, env)
+            loop(sock_file, uni, env)
         finally:
             if not env is None:
                 env.close()
     except proto.ProtoException as exc:
-        log('%s gave error: %s' % (addr, str(exc)))
+        log('%s gave error: %s' % (info.addr, str(exc)))
 
 def handshake(sock):
     """
@@ -65,7 +68,7 @@ def handshake(sock):
         sock.flush()
         raise gym_exc
 
-def loop(sock, env):
+def loop(sock, uni, env):
     """
     Handle commands from the client as they come in and
     apply them to the given Gym environment.
@@ -86,6 +89,10 @@ def loop(sock, env):
             handle_render(env)
         elif pack_type == 'upload':
             handle_upload(sock)
+        elif pack_type == 'universe_configure':
+            env = handle_universe_configure(sock, uni, env)
+        elif pack_type == 'universe_wrap':
+            env = handle_universe_wrap(sock, uni, env)
 
 def handle_reset(sock, env):
     """
@@ -165,10 +172,36 @@ def handle_upload(sock):
     try:
         gym.upload(dir_path, api_key=api_key, algorithm_id=alg_id)
         proto.write_field_str(sock, '')
-        sock.flush()
     except gym.error.Error as exc:
         proto.write_field_str(sock, str(exc))
-        sock.flush()
+    sock.flush()
+
+def handle_universe_configure(sock, uni, env):
+    """
+    Configure a Universe environment.
+    """
+    config_json = proto.read_field_str(sock)
+    try:
+        env = uni.configure(env, json.loads(config_json))
+        proto.write_field_str(sock, '')
+    except universe_plugin.UniverseException as exc:
+        proto.write_field_str(sock, str(exc))
+    sock.flush()
+    return env
+
+def handle_universe_wrap(sock, uni, env):
+    """
+    Wrap a Universe environment.
+    """
+    wrapper_name = proto.read_field_str(sock)
+    config_json = proto.read_field_str(sock)
+    try:
+        env = uni.wrap(env, wrapper_name, json.loads(config_json))
+        proto.write_field_str(sock, '')
+    except universe_plugin.UniverseException as exc:
+        proto.write_field_str(sock, str(exc))
+    sock.flush()
+    return env
 
 def log(msg):
     """

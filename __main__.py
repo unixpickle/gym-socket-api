@@ -12,8 +12,10 @@ def main():
     parser = ArgumentParser()
     parser.add_argument('-p', '--port', action='store', type=int,
                         dest='port', default=5001)
+    parser.add_argument('-u', '--universe', action='store_true',
+                        dest='universe')
     options = parser.parse_args()
-    server.serve(options.port)
+    server.serve(**vars(options))
 
 if __name__ == '__main__':
     main()

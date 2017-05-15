@@ -46,6 +46,16 @@ type Env interface {
 
 	// Close stops and cleans up the environment.
 	Close() error
+
+	// UniverseConfigure configures a Universe environment.
+	//
+	// The options argument may be nil.
+	UniverseConfigure(options map[string]interface{}) error
+
+	// UniverseWrap wraps a Universe environment.
+	//
+	// The options argument may be nil.
+	UniverseWrap(wrapper string, options map[string]interface{}) error
 }
 
 type connEnv struct {
@@ -186,6 +196,56 @@ func (c *connEnv) Render() (err error) {
 
 func (c *connEnv) Close() error {
 	return c.Conn.Close()
+}
+
+func (c *connEnv) UniverseConfigure(options map[string]interface{}) (err error) {
+	if options == nil {
+		options = map[string]interface{}{}
+	}
+	essentials.AddCtxTo("configure Universe environment", &err)
+	c.CmdLock.Lock()
+	defer c.CmdLock.Unlock()
+	if err := writePacketType(c.Buf, packetUniverseConfigure); err != nil {
+		return err
+	}
+	jsonData, err := json.Marshal(options)
+	if err != nil {
+		return err
+	}
+	if err := writeByteField(c.Buf, jsonData); err != nil {
+		return err
+	}
+	if err := c.Buf.Flush(); err != nil {
+		return err
+	}
+	return readErrorField(c.Buf)
+}
+
+func (c *connEnv) UniverseWrap(wrapper string,
+	options map[string]interface{}) (err error) {
+	if options == nil {
+		options = map[string]interface{}{}
+	}
+	essentials.AddCtxTo("wrap Universe environment", &err)
+	c.CmdLock.Lock()
+	defer c.CmdLock.Unlock()
+	if err := writePacketType(c.Buf, packetUniverseWrap); err != nil {
+		return err
+	}
+	if err := writeByteField(c.Buf, []byte(wrapper)); err != nil {
+		return err
+	}
+	jsonData, err := json.Marshal(options)
+	if err != nil {
+		return err
+	}
+	if err := writeByteField(c.Buf, jsonData); err != nil {
+		return err
+	}
+	if err := c.Buf.Flush(); err != nil {
+		return err
+	}
+	return readErrorField(c.Buf)
 }
 
 func (c *connEnv) getSpace(spaceID int) (space *Space, err error) {
