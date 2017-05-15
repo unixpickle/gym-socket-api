@@ -4,6 +4,7 @@ An executable which is run for each connection.
 This treats stdin/stdout as a connection to a client.
 """
 
+from argparse import ArgumentParser
 import io
 import json
 import sys
@@ -16,9 +17,13 @@ def main():
     """
     Executable entry-point.
     """
-    stdin = io.open(sys.stdin.fileno(), 'rb', buffering=0)
-    stdout = io.open(sys.stdout.fileno(), 'wb', buffering=0)
-    handle(io.BufferedRWPair(stdin, stdout), sys.argv[-1])
+    parser = ArgumentParser()
+    parser.add_argument('--addr', action='store', type=str, dest='addr')
+    parser.add_argument('--fd', action='store', type=int, dest='fd')
+    options = parser.parse_args()
+    in_file = io.open(options.fd, 'rb', buffering=0)
+    out_file = io.open(options.fd, 'wb', buffering=0)
+    handle(io.BufferedRWPair(in_file, out_file), options.addr)
 
 def handle(sock_file, addr):
     """
@@ -167,8 +172,7 @@ def handle_upload(sock):
 
 def log(msg):
     """
-    Log logs a message so that it will be printed to the
-    console rather than being sent to the remote server.
+    Log logs a message to the console.
     """
     sys.stderr.write(msg + '\n')
 

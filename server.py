@@ -35,14 +35,11 @@ class Handler(socketserver.BaseRequestHandler):
         args = [
             sys.executable,
             script_file,
-            '-u',
-            str(self.client_address)
+            '--addr',
+            str(self.client_address),
+            '--fd',
+            str(self.request.fileno())
         ]
-
-        if sys.version_info >= (3, 0):
-            sock = self.request.makefile('rwb', buffering=0)
-        else:
-            sock = self.request.makefile('rwb', 0)
 
         # Greatly reduces latency on Linux.
         if sys.platform in ['linux', 'linux2', 'darwin']:
@@ -50,9 +47,18 @@ class Handler(socketserver.BaseRequestHandler):
 
         try:
             print('Connection from ' + str(self.client_address))
-            proc = subprocess.Popen(args, stdin=sock, stdout=sock,
-                                    stderr=sys.stderr)
+            if sys.version_info >= (3, 2):
+                proc = subprocess.Popen(args,
+                                        stdin=sys.stdin,
+                                        stdout=sys.stdout,
+                                        stderr=sys.stderr,
+                                        pass_fds=(self.request.fileno(),))
+            else:
+                proc = subprocess.Popen(args,
+                                        stdin=sys.stdin,
+                                        stdout=sys.stdout,
+                                        stderr=sys.stderr,
+                                        close_fds=False)
             proc.wait()
         finally:
-            sock.close()
             print('Disconnected from ' + str(self.client_address))
