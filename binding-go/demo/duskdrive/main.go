@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"log"
 	"os"
 	"time"
 
@@ -36,10 +37,12 @@ func main() {
 	must(env.UniverseConfigure(map[string]interface{}{"remotes": 1}))
 
 	// Reset the environment and get initial observation.
+	log.Println("Resetting...")
 	lastObs, err := env.Reset()
 	must(err)
 
-	// Play randomly for a bit and record the FPS.
+	// Play for a bit and record the FPS.
+	log.Println("Running...")
 	startTime := time.Now().UnixNano()
 	for i := 0; i < Frames; i++ {
 		action := []interface{}{[]interface{}{"KeyEvent", "ArrowUp", true}}
@@ -49,7 +52,7 @@ func main() {
 	seconds := float64(time.Now().UnixNano()-startTime) / 1e9
 	fmt.Println("Played at", Frames/seconds, "fps")
 
-	// Save a screenshot to pong.png.
+	// Save a screenshot to screenshot.png.
 	var rawFrame [][][]float64
 	must(lastObs.Unmarshal(&rawFrame))
 	width, height := len(rawFrame[0]), len(rawFrame)
@@ -60,7 +63,6 @@ func main() {
 		// Set alpha to 1.
 		img.Pix[4*(i/3)+3] = 0xff
 	}
-
 	out, err := os.Create("screenshot.png")
 	must(err)
 	must(png.Encode(out, img))

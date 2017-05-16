@@ -110,7 +110,11 @@ def handle_step(sock, env):
     proto.write_obs(sock, env, obs)
     proto.write_reward(sock, rew)
     proto.write_bool(sock, done)
-    proto.write_field_str(sock, json.dumps(info))
+    try:
+        dumped_info = json.dumps(info)
+    except TypeError:
+        dumped_info = '{}'
+    proto.write_field_str(sock, dumped_info)
     sock.flush()
 
 def handle_get_space(sock, env):

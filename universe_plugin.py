@@ -143,7 +143,7 @@ class UniverseObservationSpace:
             return obj.tolist()
         elif isinstance(obj, dict):
             res = {}
-            for key, value in obj:
-                res[key] = cls._to_jsonable(value)
+            for key in obj:
+                res[key] = cls._to_jsonable(obj[key])
             return res
         return obj
