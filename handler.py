@@ -22,7 +22,12 @@ def main():
     parser.add_argument('--addr', action='store', type=str, dest='addr')
     parser.add_argument('--fd', action='store', type=int, dest='fd')
     parser.add_argument('--universe', action='store_true', dest='universe')
+    parser.add_argument('--setup', action='store', type=str, dest='setup_code')
     options = parser.parse_args()
+
+    # pylint: disable=W0122
+    exec(options.setup_code)
+
     in_file = io.open(options.fd, 'rb', buffering=0)
     out_file = io.open(options.fd, 'wb', buffering=0)
     handle(io.BufferedRWPair(in_file, out_file), options)

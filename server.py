@@ -12,12 +12,13 @@ if sys.version_info >= (3, 0):
 else:
     import SocketServer as socketserver
 
-def serve(port=5001, universe=False):
+def serve(port=5001, universe=False, setup_code=''):
     """
     Run a server on the given port.
     """
     server = Server(('127.0.0.1', port), Handler)
     server.universe = universe
+    server.setup_code = setup_code
     print('Listening on port ' + str(port) + '...')
     server.serve_forever()
 
@@ -27,6 +28,7 @@ class Server(socketserver.ThreadingMixIn, socketserver.TCPServer):
     """
     allow_reuse_address = True
     universe = False
+    setup_code = ''
 
 class Handler(socketserver.BaseRequestHandler):
     """
@@ -40,7 +42,9 @@ class Handler(socketserver.BaseRequestHandler):
             '--addr',
             str(self.client_address),
             '--fd',
-            str(self.request.fileno())
+            str(self.request.fileno()),
+            '--setup',
+            str(self.server.setup_code)
         ]
 
         if self.server.universe:

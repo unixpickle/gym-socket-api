@@ -14,6 +14,8 @@ def main():
                         dest='port', default=5001)
     parser.add_argument('-u', '--universe', action='store_true',
                         dest='universe')
+    parser.add_argument('-s', '--setup', action='store', type=str,
+                        dest='setup_code')
     options = parser.parse_args()
     server.serve(**vars(options))
 
