@@ -142,7 +142,7 @@ func (c *connEnv) ObservationSpace() (*Space, error) {
 }
 
 func (c *connEnv) SampleAction(dst interface{}) (err error) {
-	essentials.AddCtxTo("sample actino", &err)
+	essentials.AddCtxTo("sample action", &err)
 	c.CmdLock.Lock()
 	defer c.CmdLock.Unlock()
 	if err := writePacketType(c.Buf, packetSampleAction); err != nil {
